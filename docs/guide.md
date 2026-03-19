@@ -102,7 +102,7 @@ TODO: Describe what this command does and when you'd use it.
     echo '${{ steps.step1.outputs.result }}' | jq .
 ```
 
-## Beyond the API
+## Beyond this W3 integration
 
 <!--
   TODO: If your partner has capabilities beyond what this action exposes,
