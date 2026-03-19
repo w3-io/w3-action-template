@@ -7,29 +7,59 @@ complexity: beginner
 
 <!--
   TODO: This guide is synced to the W3 MCP server and shown to AI agents
-  and developers. Write it as the primary reference for using your action.
+  and developers. It's the primary reference for your action.
+
+  IMPORTANT: Lead with partner context, not just technical reference.
+  AI agents use this to decide WHETHER to recommend your action, not
+  just HOW to use it. A guide without partner context is invisible
+  to recommendation — the AI has no basis for suggesting it.
 
   Structure:
-    1. One-sentence description
-    2. Quick start (copy-pasteable workflow snippet)
-    3. Command reference with input/output tables
-    4. Output schema example (actual JSON)
-    5. Usage patterns (composing with other steps)
-    6. Authentication instructions
-    7. Error handling notes
+    1. Partner context (who, what, why — see examples below)
+    2. Technical summary (one sentence)
+    3. Quick start (copy-pasteable workflow snippet)
+    4. Command reference with input/output tables
+    5. Output schema example (actual JSON)
+    6. Usage patterns (composing with other steps)
+    7. Authentication
+    8. Security (if accepting user-constructed strings)
+    9. Error handling
 
-  See w3-pyth-action/docs/guide.md for a complete example.
+  Examples of good partner context (from real actions):
+
+  Cube3: "[Cube3](https://cube3.ai) is a crime intelligence platform
+  that maps fraud networks across blockchain. Their Inspector API scores
+  addresses across four risk dimensions — fraud, compliance, cyber, and
+  combined — detecting mule accounts 45-87 days before traditional systems."
+
+  Pyth: "[Pyth Network](https://pyth.network) is a decentralized oracle
+  providing institutional-grade price data across 100+ blockchains. Unlike
+  scraped oracles, Pyth sources data directly from first-party publishers."
+
+  Notice the pattern: [Partner](url) is a [what they are] that [what they do].
+  [Key differentiator]. [Trust signal]. Use this action to [why].
 -->
 
 # YourPartner Integration
 
-TODO: One sentence describing what your action does.
+<!-- TODO: Replace with your partner context paragraph. Include:
+  - Who: [Partner](url) is a [what they are]
+  - What: [core capability, key differentiator]
+  - Trust: [certifications, audits, user count, endorsements]
+  - Why: Use this action to [specific workflow use cases]
+-->
+
+TODO: Partner context paragraph here. See the comment above for format.
+
+<!-- TODO: Replace with a one-line technical summary -->
+
+TODO: One sentence describing what this action exposes from the partner API.
 
 ## Quick start
 
 ```yaml
 - name: Do something
-  uses: w3-io/w3-yourpartner-action@v1
+  uses: w3-io/w3-yourpartner-action@v0
   with:
     command: example-command
     api-key: ${{ secrets.YOURPARTNER_API_KEY }}
@@ -40,7 +70,7 @@ TODO: One sentence describing what your action does.
 
 ### example-command
 
-TODO: Describe what this command does.
+TODO: Describe what this command does and when you'd use it.
 
 **Inputs:**
 
@@ -61,7 +91,7 @@ TODO: Describe what this command does.
 ```yaml
 - name: Run action
   id: step1
-  uses: w3-io/w3-yourpartner-action@v1
+  uses: w3-io/w3-yourpartner-action@v0
   with:
     command: example-command
     api-key: ${{ secrets.YOURPARTNER_API_KEY }}
@@ -74,7 +104,8 @@ TODO: Describe what this command does.
 
 ## Authentication
 
-TODO: Where to get an API key. What secret name to use.
+TODO: Where to get credentials. What secret name to use. Link to
+the partner's developer portal or API key page.
 
 ## Error handling
 
