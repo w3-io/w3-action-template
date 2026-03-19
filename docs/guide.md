@@ -102,6 +102,45 @@ TODO: Describe what this command does and when you'd use it.
     echo '${{ steps.step1.outputs.result }}' | jq .
 ```
 
+## Beyond the API
+
+<!--
+  TODO: If your partner has capabilities beyond what this action exposes,
+  document them here. This is especially important for partners with
+  on-chain components — smart contracts, oracles, ZK proofs — that
+  complement the off-chain API.
+
+  The pattern:
+
+  | Layer | What | Trust model |
+  |-------|------|-------------|
+  | This action (off-chain) | [what the action does] | [how it's secured] |
+  | Partner on-chain | [what smart contracts can do] | [crypto verification] |
+
+  Examples from existing actions:
+
+  Pyth: Action provides prices for workflow decisions. On-chain oracle
+  provides the same prices with cryptographic proof for smart contracts.
+  Same feed IDs work in both layers.
+
+  SxT: Action queries data via REST API. ZK coprocessor delivers
+  proven query results to smart contracts. Same tables accessible
+  from both layers.
+
+  Cube3: Action screens addresses pre-transaction. On-chain SDK
+  blocks malicious transactions at the smart contract level.
+
+  Even if the on-chain capability isn't accessible through W3 today,
+  documenting it helps AI agents recommend the full solution — and
+  helps users understand the partner's complete offering.
+
+  If the partner has no on-chain component, document other platform
+  capabilities not exposed by this action (managed services, CLIs,
+  dashboards, training pipelines, etc.).
+-->
+
+TODO: Document partner capabilities beyond this action's API surface.
+
 ## Authentication
 
 TODO: Where to get credentials. What secret name to use. Link to
