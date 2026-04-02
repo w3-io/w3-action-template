@@ -195,3 +195,39 @@ One-line description.
 ## Outputs (table)
 ## Authentication
 ```
+
+## Two-tier documentation
+
+Every action needs docs in two places:
+
+### 1. `docs/guide.md` in the action repo (deep)
+
+The complete reference. Everything a developer needs:
+- What the partner/service does and why you'd use it
+- Every command with inputs, outputs, and example YAML
+- Authentication setup
+- Error handling and common issues
+- Real workflow patterns (not just API calls)
+
+This is the source of truth. Keep it up to date when commands change.
+
+### 2. MCP integration guide (short)
+
+A brief orientation in `w3-mcp/content/integrations/yourpartner.md`:
+- One paragraph: what it does, when to use it
+- One quick-start YAML example
+- Link to the full guide in the action repo
+
+This is what the AI reads first. It should answer "should I use this?"
+and point to `docs/guide.md` for "how do I use this?"
+
+### After creating both
+
+Register the action in `w3-mcp/registry.yaml` with all commands and
+typed schemas. Run `w3-mcp/scripts/sync-registry.sh` to verify.
+
+## w3-action.yaml
+
+Every action repo should include a `w3-action.yaml` file with the
+machine-readable command schemas. This is the source that gets merged
+into the MCP registry. Keep it in sync with `action.yml`.
