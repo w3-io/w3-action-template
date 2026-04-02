@@ -2,10 +2,8 @@
 
 Start here to build a new action for W3 workflows.
 
-This template gives you the structure, conventions, and tooling used by
-all W3 partner actions (Cube3, Pyth, Hyperbolic, Space and Time). Actions
-built from this template work on both the W3 runtime and GitHub Actions
-runners — same YAML, both environments.
+Actions built from this template work on both the W3 runtime and GitHub
+Actions runners — same YAML, both environments.
 
 ## Getting started
 
@@ -17,54 +15,66 @@ runners — same YAML, both environments.
      --template w3-io/w3-action-template \
      --clone
    cd w3-yourpartner-action
+   ```
+
+2. **Set up GitHub Packages auth** (one-time, for `@w3-io/action-core`):
+
+   ```bash
+   echo "//npm.pkg.github.com/:_authToken=$(gh auth token)" >> ~/.npmrc
+   echo "@w3-io:registry=https://npm.pkg.github.com" >> ~/.npmrc
+   ```
+
+3. **Install dependencies:**
+
+   ```bash
    npm install
    ```
 
-2. **Tell the story.** Before writing code, answer these questions in
-   your README and docs/guide.md:
+4. **Rename the placeholders.** Search for `TODO` across the codebase.
+   Main things to change:
 
-   - **Who** is the partner? (company, product, what they're known for)
-   - **What** does their service do? (core capability, not just API endpoints)
-   - **Why** would someone use it? (the problem it solves in a workflow)
-   - **What makes them credible?** (certifications, audits, user count, notable endorsements)
-
-   This context matters as much as the technical reference. Both humans
-   browsing GitHub and AI agents recommending integrations need to
-   understand the *why*, not just the *how*.
-
-3. **Rename the placeholders.** Search for `TODO` across the codebase —
-   every file that needs your attention has one. The main things to change:
-
-   - `README.md` — add "About [Partner]" section with context from step 2
-   - `action.yml` — your action's name, description, and inputs
+   - `action.yml` — your action's name, description, inputs, commands
+   - `src/index.js` — wire your commands into the router
    - `src/client.js` — your API client (the core logic)
-   - `src/main.js` — wire your commands into the router
    - `w3-action.yaml` — registry metadata for MCP discovery
-   - `docs/guide.md` — partner context + integration guide
+   - `README.md` — replace this with your action's docs
 
-4. **Write your client** in `src/client.js`. This is the reusable module
-   that talks to your partner API. Keep it independent of `@actions/core`
-   so it can be imported directly by others.
+5. **Write your client** in `src/client.js`. Keep it independent of
+   `@actions/core` so it can be imported directly by others.
 
-5. **Add commands** to `src/main.js`. Each command is a function that
-   reads inputs, calls the client, and returns a result. The router
-   handles output formatting and error reporting.
+6. **Add commands** to `src/index.js`. Use the `createCommandRouter`
+   from `@w3-io/action-core`:
 
-6. **Write tests.** `__tests__/client.test.js` tests your API client
-   with mocked fetch. `__tests__/main.test.js` tests the full action
-   with mocked `@actions/core`. Add an integration test that hits the
-   real API (skipped by default, runs when credentials are available).
+   ```javascript
+   import { createCommandRouter, setJsonOutput, handleError } from '@w3-io/action-core'
+   import * as core from '@actions/core'
+   import { Client } from './client.js'
 
-7. **Build and verify:**
+   const router = createCommandRouter({
+     'my-command': async () => {
+       const client = new Client({ apiKey: core.getInput('api-key') })
+       const result = await client.myCommand(core.getInput('input'))
+       setJsonOutput('result', result)
+     },
+   })
 
-   ```bash
-   npm test          # run tests
-   npm run lint      # check code style
-   npm run package   # bundle to dist/
-   npm run all       # format + lint + test + bundle
+   router()
    ```
 
-8. **Commit dist/ and tag** a release:
+7. **Write tests** in `test/`. Use `node:test` and `node:assert`:
+
+   ```bash
+   npm test
+   ```
+
+8. **Build and verify:**
+
+   ```bash
+   npm run build     # bundle to dist/ with NCC
+   npm run all       # format + lint + test + build
+   ```
+
+9. **Commit dist/ and tag** a release:
 
    ```bash
    git add dist/ && git commit -m "Build dist"
@@ -78,191 +88,107 @@ runners — same YAML, both environments.
    uses: w3-io/w3-yourpartner-action@v0
    ```
 
-## What makes a good integration
+## What `@w3-io/action-core` gives you
 
-Gold integrations aren't just API wrappers. They tell a story:
+Every W3 action uses the shared library. Don't reinvent these:
 
-### README.md structure
+| Import | What it does |
+|--------|-------------|
+| `createCommandRouter` | Dispatches on the `command` input, handles unknown commands |
+| `setJsonOutput` | Serializes output exactly once (prevents double-encoding) |
+| `handleError` | Structured error reporting with codes and status |
+| `request` | HTTP with timeout, retry on 429/5xx, auth helpers |
+| `requireInput` | Throws with clear message if input is missing |
+| `parseJsonInput` | Parses JSON input with error handling |
+| `bridge` | Syscall bridge client for chain/crypto operations |
 
-```markdown
-# W3 YourPartner Action
+### Using the bridge
 
-One-line description of what the action does.
+If your action needs blockchain or crypto operations, use the bridge
+instead of bundling SDKs:
 
-## About YourPartner
+```javascript
+import { bridge } from '@w3-io/action-core'
 
-Who they are, what they do, why their service matters.
-Key differentiators, trust signals (audits, certs, user count).
-Why someone would choose them for this use case.
+// Chain operations (ethereum, bitcoin, solana)
+const balance = await bridge.chain('ethereum', 'get-balance', { address })
 
-## Usage
-
-Quick start YAML snippet.
-
-## Commands
-
-Table of available commands.
-
-## Documentation
-
-Link to docs/guide.md for full reference.
+// Crypto primitives
+const hash = await bridge.crypto('keccak256', { data: '0xdeadbeef' })
 ```
 
-### docs/guide.md structure
-
-This file is synced to the MCP — it's what AI agents read when
-recommending your action. It needs BOTH partner context AND
-technical reference:
-
-```markdown
-# YourPartner Integration
-
-Partner context paragraph: who they are, what makes them unique,
-why you'd use their service in a workflow.
-
-Technical summary: what this action exposes from their API.
-
-## Quick start
-## Commands (with input/output tables and JSON schema examples)
-## Examples (real workflow patterns, not just API calls)
-## Authentication
-## Error handling
-```
-
-### Common mistakes
-
-- **API wrapper without context.** "Calls the Foo API" tells nobody
-  why they should care. Lead with the problem it solves.
-- **No live testing.** If you can test against the real API, do it.
-  Integration tests that actually run against production catch real
-  issues that mocks miss.
-- **dist/ not committed.** GHA needs `dist/index.js` checked in.
-  Your CI should verify it's up to date.
-- **Missing api-url input.** Every action should let users override
-  the endpoint for testing against staging environments.
+The bridge runs on the host — no `ethers`, `web3.js`, or WASM in your container.
 
 ## Conventions
-
-These conventions keep all W3 actions consistent. Follow them so your
-action feels native to the ecosystem.
 
 ### Inputs
 
 | Input | Convention |
 |-------|-----------|
-| `command` | Required. The operation to perform (e.g. `inspect`, `query`, `chat`). |
-| `api-key` | The API key. Always `api-key`, never `apikey` or `api_key`. |
-| `api-url` | Optional endpoint override for testing or staging environments. |
-| (others) | Use plain names without partner prefix. `address`, not `cube3-address`. |
+| `command` | Required. The operation to perform. |
+| `api-key` | API key. Always `api-key`, never `apikey` or `api_key`. |
+| `api-url` | Optional endpoint override for staging/testing. |
+| (others) | Plain names, no partner prefix. `address`, not `cube3-address`. |
 
 ### Outputs
 
-Every action has one output: `result`. It's always a JSON string.
-Consumers parse it with `fromJSON(steps.x.outputs.result)`.
-
-No per-field outputs. One output, documented schema.
+One output: `result`. Always JSON. Use `setJsonOutput('result', data)`.
 
 ### Errors
 
-Use `core.setFailed()` with a descriptive message. Include the error
-code from your client when available. Write a job summary on success.
-
-### Secrets
-
-Actions read secrets from inputs, never from environment variables.
-The workflow author passes them:
-
-```yaml
-with:
-  api-key: ${{ secrets.PARTNER_API_KEY }}
-```
-
-This works identically on W3 and GitHub Actions.
-
-### Security
-
-If your action accepts user-constructed strings (SQL, URLs, templates),
-document injection risks. See the SxT action's SQL injection warning
-as an example.
+Use `handleError` from action-core. It sets structured error codes
+and calls `core.setFailed()`.
 
 ### File structure
 
 ```
 w3-yourpartner-action/
-├── README.md               # Partner context + usage for GitHub visitors
+├── README.md               # Quick Start, Commands, Inputs, Outputs, Auth
 ├── action.yml              # GHA contract — inputs, outputs, runtime
-├── w3-action.yaml          # MCP registry metadata — commands, schemas
+├── w3-action.yaml          # MCP registry metadata
 ├── src/
-│   ├── index.js            # Entry point (don't modify)
-│   ├── main.js             # Command routing, output formatting
-│   └── client.js           # Your API client (the core logic)
-├── __tests__/
-│   ├── client.test.js      # Client unit tests (mocked fetch)
-│   ├── main.test.js        # Integration tests (mocked @actions/core)
-│   └── client.integration.test.js  # Live API tests (skipped by default)
-├── __fixtures__/
-│   ├── core.js             # @actions/core mock
-│   └── api-response.json   # Sample API response
+│   ├── index.js            # Command router (uses action-core)
+│   └── client.js           # Your API client
+├── test/
+│   └── client.test.js      # Tests (node:test)
 ├── docs/
-│   ├── guide.md            # Partner context + full reference (synced to MCP)
-│   └── examples/
-│       └── basic.yml       # Example workflow
-├── .github/workflows/
-│   └── ci.yml              # Lint, test, build, verify dist
+│   └── guide.md            # Integration guide (synced to MCP)
 ├── dist/
-│   └── index.js            # Bundled (MUST be committed)
-├── eslint.config.js
-├── package.json
-├── rollup.config.js
-├── .prettierrc.json
-└── .gitignore              # Does NOT include dist/
+│   └── index.js            # Bundled by NCC (committed)
+├── package.json            # NCC build, action-core dep
+└── .gitignore              # Includes .npmrc, excludes dist/
+```
+
+### README structure
+
+Every action README follows this format:
+
+```markdown
+# W3 YourPartner Action
+One-line description.
+
+## Quick Start
+## Commands (table: command, description)
+## Inputs (table: name, required, default, description)
+## Outputs (table: name, description)
+## Authentication
 ```
 
 ## MCP integration
 
-When your action is released, its metadata gets synced to the W3 MCP
-server so AI agents can discover and recommend it. Two files drive this:
+When your action is released, add it to the W3 MCP registry so the
+explorer chat and Claude Code can discover it:
 
-- **`w3-action.yaml`** — machine-readable command schemas. Merged into
-  the MCP's `registry.yaml`.
-- **`docs/guide.md`** — partner context + technical guide. Copied to
-  the MCP's `content/integrations/` directory. This is what AI reads
-  when deciding whether to recommend your action.
-
-Keep both up to date with your action's capabilities.
-
-## Certification
-
-To earn the W3 certified badge:
-
-**Partner context:**
-- [ ] README has "About [Partner]" section with value proposition
-- [ ] docs/guide.md has partner context paragraph before technical content
-- [ ] Clear explanation of why someone would use this service
-
-**Technical requirements:**
-- [ ] Follows this template structure
-- [ ] All inputs use standard naming conventions
-- [ ] Single `result` output with documented JSON schema
-- [ ] `api-url` input for endpoint override
-- [ ] Unit tests with >80% coverage
-- [ ] Integration test against live API (skipped without credentials)
-- [ ] Example workflows in `docs/examples/`
-- [ ] `w3-action.yaml` with complete command schemas
-- [ ] `dist/` committed and verified by CI
-- [ ] ESLint config present and passing
-- [ ] CI passing (format, lint, test, build, dist check)
-- [ ] Semantic versioning with tagged releases (v0.x.x + floating v0 tag)
-
-**Security:**
-- [ ] Injection risks documented (if accepting user-constructed strings)
-- [ ] Secrets passed via inputs, not environment variables
+1. Add your action to `w3-mcp/registry.yaml` under `gha-actions:`
+2. Include all commands with typed input/output schemas
+3. Add a guide to `w3-mcp/content/integrations/`
+4. Run `w3-mcp/scripts/sync-registry.sh` to verify
 
 ## Examples
 
-See these actions built from this template:
+Actions built from this template:
 
-- [w3-cube3-action](https://github.com/w3-io/w3-cube3-action) — Fraud detection (single command, partner context example)
-- [w3-pyth-action](https://github.com/w3-io/w3-pyth-action) — Price oracle (multi-command, no-auth example)
-- [w3-hyperbolic-action](https://github.com/w3-io/w3-hyperbolic-action) — AI inference + GPU compute (7 commands, multi-modal)
-- [w3-sxt-action](https://github.com/w3-io/w3-sxt-action) — Decentralized SQL (CRUD, JWT auth, SQL injection docs)
+- [w3-chainalysis-action](https://github.com/w3-io/w3-chainalysis-action) — Sanctions screening (single command)
+- [w3-pyth-action](https://github.com/w3-io/w3-pyth-action) — Price oracle (3 commands, no auth)
+- [w3-stripe-action](https://github.com/w3-io/w3-stripe-action) — Payments (41 commands)
+- [w3-email-action](https://github.com/w3-io/w3-email-action) — Multi-provider email
