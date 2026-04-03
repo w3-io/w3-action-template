@@ -7,78 +7,50 @@
  *   3. Calls the appropriate handler function
  *   4. Sets the `result` output as a JSON string
  *   5. Writes a job summary for visibility in the Actions UI
- *   6. Reports errors cleanly via core.setFailed()
+ *   6. Reports errors cleanly via handleError()
  *
  * To add a new command:
- *   1. Write a handler function (async, takes client, returns result)
- *   2. Add it to the COMMANDS map
- *   3. Add summary rendering in writeSummary() if appropriate
+ *   1. Write a handler function (async, returns result)
+ *   2. Add it to the commands passed to createCommandRouter()
  */
 
 import * as core from '@actions/core'
+import { createCommandRouter, setJsonOutput, writeSummary } from '@w3-io/action-core'
 // TODO: Update this import to match your renamed client
-import { Client, ClientError } from './client.js'
+import { Client } from './client.js'
+
+// TODO: Update constructor args to match your client.
+// Remove apiKey if your API doesn't need auth.
+function getClient() {
+  return new Client({
+    apiKey: core.getInput('api-key', { required: true }),
+    baseUrl: core.getInput('api-url') || undefined,
+  })
+}
 
 // TODO: Replace with your commands. Each key is a command name that users
-// pass via the `command` input. Each value is an async function that takes
-// the client and returns a result object.
-const COMMANDS = {
-  'example-command': runExampleCommand,
-  // 'another-command': runAnotherCommand,
-}
+// pass via the `command` input. Each value is an async function that
+// creates the client, calls the operation, sets outputs, and writes a summary.
+const router = createCommandRouter({
+  'example-command': async () => {
+    const client = getClient()
+    // TODO: Read your command-specific inputs here
+    const input = core.getInput('input', { required: true })
 
-export async function run() {
-  try {
-    const command = core.getInput('command', { required: true })
-    const handler = COMMANDS[command]
+    const result = await client.exampleCommand(input)
+    setJsonOutput('result', result)
 
-    if (!handler) {
-      core.setFailed(`Unknown command: "${command}". Available: ${Object.keys(COMMANDS).join(', ')}`)
-      return
-    }
+    // TODO: Customize the summary for your action.
+    // Key-value pairs work well for most commands:
+    //   await writeSummary('My Action: command', [['Key', 'value'], ['TX', '`0x...`']])
+    // Or pass an object for a JSON code block:
+    //   await writeSummary('My Action: command', result)
+    await writeSummary('Action Result', result)
+  },
 
-    // TODO: Update constructor args to match your client.
-    // Remove apiKey if your API doesn't need auth.
-    const client = new Client({
-      apiKey: core.getInput('api-key', { required: true }),
-      baseUrl: core.getInput('api-url') || undefined,
-    })
+  // 'another-command': async () => { ... },
+})
 
-    const result = await handler(client)
-    core.setOutput('result', JSON.stringify(result))
-
-    writeSummary(command, result)
-  } catch (error) {
-    // TODO: Update error class name to match yours
-    if (error instanceof ClientError) {
-      core.setFailed(`${error.name} (${error.code}): ${error.message}`)
-    } else {
-      core.setFailed(error.message)
-    }
-  }
-}
-
-// -- Command handlers -------------------------------------------------------
-// Each handler reads its own inputs, calls the client, returns a result.
-// Keep these thin — business logic belongs in the client.
-
-async function runExampleCommand(client) {
-  // TODO: Read your command-specific inputs here
-  const input = core.getInput('input', { required: true })
-
-  return client.exampleCommand(input)
-}
-
-// -- Job summary ------------------------------------------------------------
-// Optional but recommended. Renders a visible summary in the Actions UI.
-// See https://github.blog/news-insights/product-news/supercharging-github-actions-with-job-summaries/
-
-function writeSummary(command, result) {
-  // TODO: Customize the summary for your action. A table of key results
-  // works well. Delete this function if your action doesn't need a summary.
-  core.summary
-    .addHeading('Action Result', 3)
-    .addRaw(`**Command:** \`${command}\`\n\n`)
-    .addCodeBlock(JSON.stringify(result, null, 2), 'json')
-    .write()
+export function run() {
+  router()
 }
