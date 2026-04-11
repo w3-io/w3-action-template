@@ -1,35 +1,17 @@
-import { createCommandRouter, handleError, setJsonOutput } from '@w3-io/action-core'
-import * as core from '@actions/core'
-// TODO: Import your client
-import { Client } from './client.js'
-
 /**
- * W3 Action Template
+ * W3 Action entrypoint.
  *
- * Each command is an async function that reads inputs, calls the client,
- * and returns a result. The router handles dispatch and error reporting.
+ * Thin wrapper that calls run() from main.js. The split exists so that
+ * tests can import run() directly without triggering execution at module
+ * load time.
  *
- * To add a command:
- *   1. Write a handler function below
- *   2. Add it to the commands map
+ * Do not add logic here — keep it in main.js.
  */
 
-// TODO: Initialize your client
-function getClient() {
-  return new Client({
-    apiKey: core.getInput('api-key', { required: true }),
-    baseUrl: core.getInput('api-url') || undefined,
-  })
-}
+import { run } from './main.js'
 
-const router = createCommandRouter({
-  // TODO: Replace with your commands
-  'example-command': async () => {
-    const client = getClient()
-    const input = core.getInput('input', { required: true })
-    const result = await client.exampleCommand(input)
-    setJsonOutput('result', result)
-  },
-})
+// Suppress noisy unhandled rejection warnings; main.js's try/catch handles
+// them via core.setFailed and structured error reporting.
+process.on('unhandledRejection', () => {})
 
-router()
+run()
