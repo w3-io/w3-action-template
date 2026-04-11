@@ -15,7 +15,7 @@ the technical reference. -->
   with:
     command: example-command
     api-key: ${{ secrets.PARTNER_API_KEY }}
-    input: "value"
+    input: 'value'
 ```
 
 ## Commands
@@ -26,9 +26,9 @@ the technical reference. -->
 
 **Inputs:**
 
-| Input | Type | Required | Description |
-|-------|------|----------|-------------|
-| `input` | string | Yes | What to process |
+| Input   | Type   | Required | Description     |
+| ------- | ------ | -------- | --------------- |
+| `input` | string | Yes      | What to process |
 
 **Output:**
 

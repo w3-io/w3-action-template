@@ -32,7 +32,6 @@ Actions runners — same YAML, both environments.
 
 4. **Rename the placeholders.** Search for `TODO` across the codebase.
    Main things to change:
-
    - `action.yml` — your action's name, description, inputs, commands
    - `src/index.js` — wire your commands into the router
    - `src/client.js` — your API client (the core logic)
@@ -92,15 +91,15 @@ Actions runners — same YAML, both environments.
 
 Every W3 action uses the shared library. Don't reinvent these:
 
-| Import | What it does |
-|--------|-------------|
+| Import                | What it does                                                |
+| --------------------- | ----------------------------------------------------------- |
 | `createCommandRouter` | Dispatches on the `command` input, handles unknown commands |
-| `setJsonOutput` | Serializes output exactly once (prevents double-encoding) |
-| `handleError` | Structured error reporting with codes and status |
-| `request` | HTTP with timeout, retry on 429/5xx, auth helpers |
-| `requireInput` | Throws with clear message if input is missing |
-| `parseJsonInput` | Parses JSON input with error handling |
-| `bridge` | Syscall bridge client for chain/crypto operations |
+| `setJsonOutput`       | Serializes output exactly once (prevents double-encoding)   |
+| `handleError`         | Structured error reporting with codes and status            |
+| `request`             | HTTP with timeout, retry on 429/5xx, auth helpers           |
+| `requireInput`        | Throws with clear message if input is missing               |
+| `parseJsonInput`      | Parses JSON input with error handling                       |
+| `bridge`              | Syscall bridge client for chain/crypto operations           |
 
 ### Using the bridge
 
@@ -123,12 +122,12 @@ The bridge runs on the host — no `ethers`, `web3.js`, or WASM in your containe
 
 ### Inputs
 
-| Input | Convention |
-|-------|-----------|
-| `command` | Required. The operation to perform. |
-| `api-key` | API key. Always `api-key`, never `apikey` or `api_key`. |
-| `api-url` | Optional endpoint override for staging/testing. |
-| (others) | Plain names, no partner prefix. `address`, not `cube3-address`. |
+| Input     | Convention                                                      |
+| --------- | --------------------------------------------------------------- |
+| `command` | Required. The operation to perform.                             |
+| `api-key` | API key. Always `api-key`, never `apikey` or `api_key`.         |
+| `api-url` | Optional endpoint override for staging/testing.                 |
+| (others)  | Plain names, no partner prefix. `address`, not `cube3-address`. |
 
 ### Outputs
 
@@ -165,12 +164,17 @@ Every action README follows this format:
 
 ```markdown
 # W3 YourPartner Action
+
 One-line description.
 
 ## Quick Start
+
 ## Commands (table: command, description)
+
 ## Inputs (table: name, required, default, description)
+
 ## Outputs (table: name, description)
+
 ## Authentication
 ```
 

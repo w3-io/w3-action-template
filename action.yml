@@ -6,21 +6,21 @@
 #
 # Reference: https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions
 
-name: 'W3 YourPartner Action'          # TODO: e.g. "W3 Cube3 Action"
-description: 'Short description'        # TODO: what does your action do?
+name: 'W3 YourPartner Action' # TODO: e.g. "W3 Cube3 Action"
+description: 'Short description' # TODO: what does your action do?
 author: 'w3-io'
 
 inputs:
   command:
-    description: 'Operation to perform'  # TODO: list your commands here
+    description: 'Operation to perform' # TODO: list your commands here
     required: true
   api-key:
     description: 'API key for authentication'
-    required: true                       # TODO: set to false if your API needs no auth
+    required: true # TODO: set to false if your API needs no auth
   api-url:
     description: 'API base URL override (for testing or staging)'
     required: false
-    default: 'https://api.yourpartner.com'  # TODO: your partner's production API URL
+    default: 'https://api.yourpartner.com' # TODO: your partner's production API URL
 
   # TODO: Add your command-specific inputs below. Use plain names without
   # partner prefix. For example:
@@ -40,5 +40,5 @@ outputs:
     # Document the schema in your w3-action.yaml and docs/guide.md.
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
