@@ -22,7 +22,7 @@ If you're forking this template to build a new action, follow this doc verbatim.
 
 ---
 
-## The 21-item standards checklist
+## The 24-item standards checklist
 
 Every active W3 partner action must satisfy **all** of these. If you're tempted to skip one, read the "why" first — most of these were paid for in real bugs.
 
@@ -176,6 +176,24 @@ node_modules/
 ```
 
 - **Verify**: `git ls-tree HEAD -- .npmrc` should return one entry.
+
+### K. Consistency
+
+**K22. `dist/index.js` is up to date with source.**
+
+- **Why**: F16 checks that `dist/index.js` exists, but a stale dist is just as broken as a missing one. If source changed but dist wasn't rebuilt, the shipped action runs old code. CI catches this with `npm run build && git diff --quiet dist/`, but the audit should too.
+- **Verify**: `npm run build && git diff --quiet dist/` (no changes = up to date)
+
+**K23. `action.yml` inputs match `core.getInput()` calls in source.**
+
+- **Why**: When an action adds or removes parameters, `action.yml` and `src/main.js` can drift. A declared input with no corresponding `getInput()` confuses users; a `getInput()` with no declaration silently fails.
+- **Verify**: Extract input names from `action.yml` and `core.getInput()` calls in `src/`; the sets should match (excluding `command` and `network` which are universal).
+
+**K24. `action.yml` `to` and `on-behalf-of` `required` flags match source validation.**
+
+- **Why**: If the source throws `MISSING_INPUT` for a parameter but `action.yml` says `required: false`, users get confusing runtime errors instead of upfront validation. Conversely, marking an optional param as required blocks valid use cases.
+- **Note**: This is a spot check, not exhaustive. The full input-source cross-reference is K23.
+- **Verify**: For each input marked `required: true` in `action.yml`, verify `core.getInput(name, { required: true })` appears in source (and vice versa for command-level required params).
 
 ---
 

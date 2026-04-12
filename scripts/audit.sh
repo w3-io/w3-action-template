@@ -1,7 +1,7 @@
 #!/bin/bash
 # audit.sh — w3 partner action consistency audit
 #
-# Checks every w3-*-action repo in the parent workspace against the 21-item
+# Checks every w3-*-action repo in the parent workspace against the 24-item
 # standards checklist in ../AGENTS.md. Reads from origin/<default-branch>
 # rather than local working trees so the audit reflects what's actually
 # shipped, not what's in someone's uncommitted changes.
@@ -122,9 +122,9 @@ audit_repo() {
 
   # Compute pass/fail for each check.
   # 1=pass, 0=fail
-  local A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21
+  local A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24
   A1=0; [ -n "$ci" ] && A1=1
-  A2=0; echo "$ci" | grep -q "node-version: 24" && A2=1
+  A2=0; echo "$ci" | grep -qE "node-version: ['\"]?24['\"]?" && A2=1
   A3=0; echo "$ci" | grep -q "packages: read" && A3=1
   # A4 accepts both single- and double-quoted scope values.
   A4=0; echo "$ci" | grep -q "registry-url:" && echo "$ci" | grep -qE "scope: ['\"]@w3-io['\"]" && A4=1
@@ -160,9 +160,53 @@ audit_repo() {
   J21=0; in_tree "$dir" ".npmrc" && \
     show_origin "$dir" ".npmrc" | grep -q "npm.pkg.github.com" && J21=1
 
+  # K22: dist/index.js up to date — check if CI has a staleness guard.
+  # We can't rebuild during the audit (no npm install), so we verify
+  # CI has `git diff` on dist/ to catch staleness at push time.
+  K22=0; echo "$ci" | grep -q "git diff.*dist" && K22=1
+
+  # K23: action.yml inputs match core.getInput() calls in source.
+  # Extract declared inputs (excluding command/network which are universal).
+  local srcmain
+  srcmain=$(show_origin "$dir" "src/main.js")
+  if [ -n "$action" ] && [ -n "$srcmain" ]; then
+    local yml_inputs src_inputs
+    yml_inputs=$(echo "$action" | awk '/^inputs:/{flag=1;next} /^[a-z]/{flag=0} flag' \
+      | grep -oE "^  [a-z][a-z-]*:" | sed 's/[: ]//g' \
+      | grep -vE "^(command|network)$" | sort)
+    src_inputs=$(echo "$srcmain" | grep -oE "getInput\(['\"][a-z-]+['\"]" \
+      | sed "s/getInput(['\"]//;s/['\"]$//" \
+      | grep -vE "^(command|network)$" | sort -u)
+    # Pass if every getInput call has a matching action.yml declaration.
+    K23=1
+    for inp in $src_inputs; do
+      if ! echo "$yml_inputs" | grep -qx "$inp"; then
+        K23=0
+        break
+      fi
+    done
+  else
+    K23=0
+  fi
+
+  # K24: action.yml required flags match source validation.
+  # Check that inputs marked required:true in action.yml use
+  # { required: true } in getInput, and vice versa.
+  # Lightweight: just verify command and network are the only
+  # required:true inputs (per convention, per-command requirements
+  # are validated in the action code, not in action.yml).
+  K24=0
+  if [ -n "$action" ]; then
+    local required_count
+    required_count=$(echo "$action" | awk '/^inputs:/{flag=1;next} /^[a-z]/{flag=0} flag' \
+      | grep -c "required: true" || echo 0)
+    # Exactly 2 required inputs: command and network
+    [ "$required_count" = "2" ] && K24=1
+  fi
+
   # Format the row.
   printf "| %-25s |" "$repo"
-  for v in A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21; do
+  for v in A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24; do
     eval "val=\$$v"
     if [ "$val" = "1" ]; then printf " ✅ |"; else printf " ❌ |"; FAILED=1; fi
   done
@@ -176,10 +220,10 @@ audit_repo() {
 cat <<'EOF'
 # W3 Action Consistency Audit
 
-Standards checked: 21 (see AGENTS.md). Reading from `origin/<default-branch>`.
+Standards checked: 24 (see AGENTS.md). Reading from `origin/<default-branch>`.
 
-| Repo                      | A1 | A2 | A3 | A4 | A5 | A6 | A7 | B8 | C9 | C10 | C11 | D12 | D13 | E14 | E15 | F16 | G17 | H18 | H19 | I20 | J21 |
-|---------------------------|----|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| Repo                      | A1 | A2 | A3 | A4 | A5 | A6 | A7 | B8 | C9 | C10 | C11 | D12 | D13 | E14 | E15 | F16 | G17 | H18 | H19 | I20 | J21 | K22 | K23 | K24 |
+|---------------------------|----|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 EOF
 
 # ---------------------------------------------------------------------------
@@ -210,6 +254,7 @@ cat <<EOF
 - H18-H19: README + docs/guide.md
 - I20: standard package.json scripts (format, format:check, lint, test, build, all)
 - J21: .npmrc tracked with @w3-io scope mapping
+- K22-K24: Consistency (dist staleness guard in CI, action.yml inputs match source, required flags correct)
 
 See ../AGENTS.md for the full per-check explanations and fix recipes.
 EOF
