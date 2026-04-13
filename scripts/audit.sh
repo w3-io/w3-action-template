@@ -190,18 +190,36 @@ audit_repo() {
   fi
 
   # K24: action.yml required flags match source validation.
-  # Check that inputs marked required:true in action.yml use
-  # { required: true } in getInput, and vice versa.
-  # Lightweight: just verify command and network are the only
-  # required:true inputs (per convention, per-command requirements
-  # are validated in the action code, not in action.yml).
+  # Verify that 'command' is required and that per-command inputs
+  # (asset, amount, user, etc.) are NOT marked required in action.yml
+  # (they're conditionally required per command, validated in code).
+  #
+  # Auth inputs (api-key, environment-id, network) may also be
+  # required — that's correct for REST API actions that need
+  # credentials on every call.
+  # K24: command is required; per-command inputs are not.
+  # Parse each input block to find which are marked required: true.
   K24=0
   if [ -n "$action" ]; then
-    local required_count
-    required_count=$(echo "$action" | awk '/^inputs:/{flag=1;next} /^[a-z]/{flag=0} flag' \
-      | grep -c "required: true" || echo 0)
-    # Exactly 2 required inputs: command and network
-    [ "$required_count" = "2" ] && K24=1
+    local required_inputs
+    required_inputs=$(echo "$action" | awk '
+      /^inputs:/ { in_inputs=1; next }
+      /^[a-z]/ && in_inputs { in_inputs=0 }
+      in_inputs && /^  [a-z]/ { name=$1; gsub(/:/, "", name) }
+      in_inputs && /required: true/ { print name }
+    ')
+    # command must be required
+    if echo "$required_inputs" | grep -qx "command"; then
+      # Per-command inputs must NOT be required (they're conditional)
+      local bad=0
+      for inp in asset amount shares user to vault oapp; do
+        if echo "$required_inputs" | grep -qx "$inp"; then
+          bad=1
+          break
+        fi
+      done
+      [ "$bad" = "0" ] && K24=1
+    fi
   fi
 
   # Format the row.
