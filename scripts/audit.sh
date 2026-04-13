@@ -217,17 +217,19 @@ audit_repo() {
       in_inputs && /^  [a-z]/ { name=$1; gsub(/:/, "", name) }
       in_inputs && /required: true/ { print name }
     ')
-    # command must be required
-    if echo "$required_inputs" | grep -qx "command"; then
-      # Per-command inputs must NOT be required (they're conditional)
-      local bad=0
-      for inp in asset amount shares user to vault oapp; do
-        if echo "$required_inputs" | grep -qx "$inp"; then
-          bad=1
-          break
-        fi
-      done
-      [ "$bad" = "0" ] && K24=1
+    # Two valid patterns:
+    # 1. Command-based: 'command' is required, per-command inputs are not
+    # 2. Direct: no 'command' input (e.g., email action sends directly)
+    local has_command
+    has_command=$(echo "$action" | awk '/^inputs:/{f=1;next} /^[a-z]/ && f{f=0} f && /^  command:/{print "yes"}')
+    if [ "$has_command" = "yes" ]; then
+      # Command-based pattern: command must be required
+      if echo "$required_inputs" | grep -qx "command"; then
+        K24=1
+      fi
+    else
+      # Direct pattern: no command input, any required set is valid
+      K24=1
     fi
   fi
 
