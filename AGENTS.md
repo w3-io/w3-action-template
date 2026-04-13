@@ -189,11 +189,10 @@ node_modules/
 - **Why**: When an action adds or removes parameters, `action.yml` and `src/main.js` can drift. A declared input with no corresponding `getInput()` confuses users; a `getInput()` with no declaration silently fails.
 - **Verify**: Extract input names from `action.yml` and `core.getInput()` calls in `src/`; the sets should match (excluding `command` and `network` which are universal).
 
-**K24. `action.yml` `to` and `on-behalf-of` `required` flags match source validation.**
+**K24. `command` is required; per-command inputs are not.**
 
-- **Why**: If the source throws `MISSING_INPUT` for a parameter but `action.yml` says `required: false`, users get confusing runtime errors instead of upfront validation. Conversely, marking an optional param as required blocks valid use cases.
-- **Note**: This is a spot check, not exhaustive. The full input-source cross-reference is K23.
-- **Verify**: For each input marked `required: true` in `action.yml`, verify `core.getInput(name, { required: true })` appears in source (and vice versa for command-level required params).
+- **Why**: `command` must always be required. Per-command inputs (`asset`, `amount`, `user`, `vault`, `oapp`, `shares`, `to`) are conditionally required depending on the command — they should be `required: false` in `action.yml` and validated in the action code. Auth inputs (`api-key`, `environment-id`, `network`) may also be required — that's correct for REST API actions that need credentials on every call.
+- **Verify**: `command` appears in required inputs. Per-command inputs (`asset`, `amount`, `user`, etc.) do not.
 
 ---
 
