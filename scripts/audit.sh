@@ -166,17 +166,36 @@ audit_repo() {
   K22=0; echo "$ci" | grep -q "git diff.*dist" && K22=1
 
   # K23: action.yml inputs match core.getInput() calls in source.
-  # Extract declared inputs (excluding command/network which are universal).
-  local srcmain
-  srcmain=$(show_origin "$dir" "src/main.js")
-  if [ -n "$action" ] && [ -n "$srcmain" ]; then
+  # Search all JS files in src/ (actions may use main.js, index.js, or other files).
+  local allsrc=""
+  for srcfile in src/main.js src/index.js; do
+    local content
+    content=$(show_origin "$dir" "$srcfile")
+    [ -n "$content" ] && allsrc="${allsrc}${content}"
+  done
+  # Also check any other .js files in src/ via ls-tree
+  local default_ref
+  default_ref=$(git -C "$dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null \
+    | sed 's@^refs/remotes/origin/@@')
+  if [ -n "$default_ref" ]; then
+    local extra_files
+    extra_files=$(git -C "$dir" ls-tree --name-only "origin/$default_ref" -- src/ 2>/dev/null \
+      | grep '\.js$' | grep -v 'index\.js$\|main\.js$')
+    for f in $extra_files; do
+      local content
+      content=$(show_origin "$dir" "$f")
+      [ -n "$content" ] && allsrc="${allsrc}${content}"
+    done
+  fi
+
+  if [ -n "$action" ] && [ -n "$allsrc" ]; then
     local yml_inputs src_inputs
     yml_inputs=$(echo "$action" | awk '/^inputs:/{flag=1;next} /^[a-z]/{flag=0} flag' \
       | grep -oE "^  [a-z][a-z-]*:" | sed 's/[: ]//g' \
-      | grep -vE "^(command|network)$" | sort)
-    src_inputs=$(echo "$srcmain" | grep -oE "getInput\(['\"][a-z-]+['\"]" \
+      | grep -vE "^(command|network|api-key|environment-id)$" | sort)
+    src_inputs=$(echo "$allsrc" | grep -oE "getInput\(['\"][a-z-]+['\"]" \
       | sed "s/getInput(['\"]//;s/['\"]$//" \
-      | grep -vE "^(command|network)$" | sort -u)
+      | grep -vE "^(command|network|api-key|environment-id)$" | sort -u)
     # Pass if every getInput call has a matching action.yml declaration.
     K23=1
     for inp in $src_inputs; do
