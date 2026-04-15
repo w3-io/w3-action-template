@@ -8,7 +8,7 @@ If you're forking this template to build a new action, follow this doc verbatim.
 
 | Reader                 | What you need from this doc                                                                                                             |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **AI agents**          | The 21-item checklist with grep/inspect commands and per-item fix recipes. Skip the prose.                                              |
+| **AI agents**          | The 25-item checklist with grep/inspect commands and per-item fix recipes. Skip the prose.                                              |
 | **Human contributors** | The "why" sections — they encode the lessons we learned the hard way. The full set of standards is short enough to read in one sitting. |
 | **Both**               | The file structure pattern and the canonical `src/` + `test/` shapes.                                                                   |
 
@@ -22,7 +22,7 @@ If you're forking this template to build a new action, follow this doc verbatim.
 
 ---
 
-## The 24-item standards checklist
+## The 25-item standards checklist
 
 Every active W3 partner action must satisfy **all** of these. If you're tempted to skip one, read the "why" first — most of these were paid for in real bugs.
 
@@ -194,6 +194,21 @@ node_modules/
 - **Why**: `command` must always be required. Per-command inputs (`asset`, `amount`, `user`, `vault`, `oapp`, `shares`, `to`) are conditionally required depending on the command — they should be `required: false` in `action.yml` and validated in the action code. Auth inputs (`api-key`, `environment-id`, `network`) may also be required — that's correct for REST API actions that need credentials on every call.
 - **Verify**: `command` appears in required inputs. Per-command inputs (`asset`, `amount`, `user`, etc.) do not.
 
+**K25. E2E test workflow exists.**
+
+```
+test/workflows/e2e.yaml
+```
+
+A real W3 workflow YAML that exercises the action's commands against real APIs or contracts. Must:
+- Exist as a file in `test/workflows/`
+- Be a valid W3 workflow (name, on: workflow_dispatch, jobs)
+- Document prerequisites (required env vars) in comments
+- Cover at least the primary read and write command groups
+
+- **Why**: Unit tests with mocked fetch prove the code works in isolation, but can't catch API contract drift, auth misconfiguration, or bridge integration bugs. The E2E workflow is the only artifact that proves the action works end-to-end through the W3 protocol against real infrastructure.
+- **Verify**: `ls test/workflows/e2e.yaml` (or any `.yaml` in `test/workflows/`)
+
 ---
 
 ## File structure (canonical layout)
@@ -221,7 +236,9 @@ w3-yourpartner-action/
 │   ├── index.js                # entrypoint (calls run() from main.js)
 │   └── main.js                 # createCommandRouter + handlers + run()
 ├── test/
-│   └── client.test.js          # node:test + node:assert/strict
+│   ├── client.test.js          # node:test + node:assert/strict
+│   └── workflows/
+│       └── e2e.yaml            # E2E test workflow for manual validation
 └── w3-action.yaml              # machine-readable schema for MCP registry
 ```
 

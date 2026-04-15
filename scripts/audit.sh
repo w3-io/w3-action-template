@@ -1,7 +1,7 @@
 #!/bin/bash
 # audit.sh — w3 partner action consistency audit
 #
-# Checks every w3-*-action repo in the parent workspace against the 24-item
+# Checks every w3-*-action repo in the parent workspace against the 25-item
 # standards checklist in ../AGENTS.md. Reads from origin/<default-branch>
 # rather than local working trees so the audit reflects what's actually
 # shipped, not what's in someone's uncommitted changes.
@@ -122,7 +122,7 @@ audit_repo() {
 
   # Compute pass/fail for each check.
   # 1=pass, 0=fail
-  local A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24
+  local A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24 K25
   A1=0; [ -n "$ci" ] && A1=1
   A2=0; echo "$ci" | grep -qE "node-version: ['\"]?24['\"]?" && A2=1
   A3=0; echo "$ci" | grep -q "packages: read" && A3=1
@@ -233,9 +233,18 @@ audit_repo() {
     fi
   fi
 
+  # K25: E2E test workflow exists in test/workflows/.
+  K25=0
+  if [ -n "$default_ref" ]; then
+    local e2e_files
+    e2e_files=$(git -C "$dir" ls-tree --name-only "origin/$default_ref" -- test/workflows/ 2>/dev/null \
+      | grep '\.yaml$\|\.yml$' || true)
+    [ -n "$e2e_files" ] && K25=1
+  fi
+
   # Format the row.
   printf "| %-25s |" "$repo"
-  for v in A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24; do
+  for v in A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24 K25; do
     eval "val=\$$v"
     if [ "$val" = "1" ]; then printf " ✅ |"; else printf " ❌ |"; FAILED=1; fi
   done
@@ -249,10 +258,10 @@ audit_repo() {
 cat <<'EOF'
 # W3 Action Consistency Audit
 
-Standards checked: 24 (see AGENTS.md). Reading from `origin/<default-branch>`.
+Standards checked: 25 (see AGENTS.md). Reading from `origin/<default-branch>`.
 
-| Repo                      | A1 | A2 | A3 | A4 | A5 | A6 | A7 | B8 | C9 | C10 | C11 | D12 | D13 | E14 | E15 | F16 | G17 | H18 | H19 | I20 | J21 | K22 | K23 | K24 |
-|---------------------------|----|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| Repo                      | A1 | A2 | A3 | A4 | A5 | A6 | A7 | B8 | C9 | C10 | C11 | D12 | D13 | E14 | E15 | F16 | G17 | H18 | H19 | I20 | J21 | K22 | K23 | K24 | K25 |
+|---------------------------|----|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 EOF
 
 # ---------------------------------------------------------------------------
@@ -283,7 +292,7 @@ cat <<EOF
 - H18-H19: README + docs/guide.md
 - I20: standard package.json scripts (format, format:check, lint, test, build, all)
 - J21: .npmrc tracked with @w3-io scope mapping
-- K22-K24: Consistency (dist staleness guard in CI, action.yml inputs match source, required flags correct)
+- K22-K25: Consistency (dist staleness guard in CI, action.yml inputs match source, required flags correct, E2E test workflow)
 
 See ../AGENTS.md for the full per-check explanations and fix recipes.
 EOF
