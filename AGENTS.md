@@ -8,7 +8,7 @@ If you're forking this template to build a new action, follow this doc verbatim.
 
 | Reader                 | What you need from this doc                                                                                                             |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **AI agents**          | The 25-item checklist with grep/inspect commands and per-item fix recipes. Skip the prose.                                              |
+| **AI agents**          | The 26-item checklist with grep/inspect commands and per-item fix recipes. Skip the prose.                                              |
 | **Human contributors** | The "why" sections — they encode the lessons we learned the hard way. The full set of standards is short enough to read in one sitting. |
 | **Both**               | The file structure pattern and the canonical `src/` + `test/` shapes.                                                                   |
 
@@ -22,7 +22,7 @@ If you're forking this template to build a new action, follow this doc verbatim.
 
 ---
 
-## The 25-item standards checklist
+## The 26-item standards checklist
 
 Every active W3 partner action must satisfy **all** of these. If you're tempted to skip one, read the "why" first — most of these were paid for in real bugs.
 
@@ -208,6 +208,25 @@ A real W3 workflow YAML that exercises the action's commands against real APIs o
 
 - **Why**: Unit tests with mocked fetch prove the code works in isolation, but can't catch API contract drift, auth misconfiguration, or bridge integration bugs. The E2E workflow is the only artifact that proves the action works end-to-end through the W3 protocol against real infrastructure.
 - **Verify**: `ls test/workflows/e2e.yaml` (or any `.yaml` in `test/workflows/`)
+
+**K26. E2E results documented.**
+
+```
+test/workflows/RESULTS.md
+```
+
+Documents verified E2E test results with:
+- Last verified date
+- Environment and test method
+- Prerequisites table (credentials, env vars, signup URLs)
+- Per-step results table (command, status, duration)
+- Skipped commands with reasons
+- Runnable "How to run" instructions
+
+Updated after each verified test run. Stale results (>30 days) are a warning, not a failure.
+
+- **Why**: The E2E workflow proves the action *can* work, but RESULTS.md proves it *does* work and documents what's needed to reproduce. Without it, a new developer can't set up E2E testing.
+- **Verify**: `ls test/workflows/RESULTS.md`
 
 ---
 
