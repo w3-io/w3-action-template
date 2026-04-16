@@ -101,10 +101,12 @@ audit_repo() {
       ;;
   esac
 
-  # Check default branch
-  local default
-  default=$(git -C "$dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null \
-    | sed 's@^refs/remotes/origin/@@')
+  # Check default branch. Split the git call from the prefix strip so a
+  # missing `origin/HEAD` (e.g. a local-only scaffold with no remote)
+  # doesn't trip `set -o pipefail` and abort the whole audit loop.
+  local default=""
+  default=$(git -C "$dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null) || default=""
+  default="${default#refs/remotes/origin/}"
   if [ -z "$default" ]; then
     printf "| %-25s | (no remote HEAD) |\n" "$repo"
     return 0
@@ -180,10 +182,11 @@ audit_repo() {
     content=$(show_origin "$dir" "$srcfile")
     [ -n "$content" ] && allsrc="${allsrc}${content}"
   done
-  # Also check any other .js files in src/ via ls-tree
-  local default_ref
-  default_ref=$(git -C "$dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null \
-    | sed 's@^refs/remotes/origin/@@')
+  # Also check any other .js files in src/ via ls-tree. Same pipefail
+  # guard as above — a failed symbolic-ref would otherwise abort the loop.
+  local default_ref=""
+  default_ref=$(git -C "$dir" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null) || default_ref=""
+  default_ref="${default_ref#refs/remotes/origin/}"
   if [ -n "$default_ref" ]; then
     local extra_files
     extra_files=$(git -C "$dir" ls-tree --name-only "origin/$default_ref" -- src/ 2>/dev/null \
