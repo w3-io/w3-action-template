@@ -136,7 +136,12 @@ audit_repo() {
   # Accepts [main], [master], [main, master], or any list that includes default.
   A7=0; echo "$ci" | grep -E "branches:" | grep -q "$default" && A7=1
   B8=0; echo "$ignore" | grep -qE "^dist/" && B8=1
-  C9=0; echo "$pkg" | grep -q '"@w3-io/action-core": "\^0\.4\.[1-9]' && C9=1
+  # C9 accepts any ^0.4.1+ release line. Some actions are ahead of the
+  # template on action-core (e.g. ^0.6.x); the minimum bar is ^0.4.1
+  # (the first public release), not exactly-0.4.x.
+  C9=0
+  echo "$pkg" | grep -qE '"@w3-io/action-core": "\^0\.([4-9]|[1-9][0-9])\.[0-9]+"' && C9=1
+  echo "$pkg" | grep -qE '"@w3-io/action-core": "\^[1-9][0-9]*\.[0-9]+\.[0-9]+"' && C9=1
   C10=0; echo "$pkg" | grep -q '"type": "module"' && C10=1
   C11=0; ! echo "$srcindex" | grep -q "getBooleanInput" && C11=1
   D12=0; ! echo "$pkg" | grep -q '"jest"' && D12=1
