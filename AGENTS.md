@@ -8,7 +8,7 @@ If you're forking this template to build a new action, follow this doc verbatim.
 
 | Reader                 | What you need from this doc                                                                                                             |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **AI agents**          | The 26-item checklist with grep/inspect commands and per-item fix recipes. Skip the prose.                                              |
+| **AI agents**          | The 29-item checklist with grep/inspect commands and per-item fix recipes. Skip the prose.                                              |
 | **Human contributors** | The "why" sections — they encode the lessons we learned the hard way. The full set of standards is short enough to read in one sitting. |
 | **Both**               | The file structure pattern and the canonical `src/` + `test/` shapes.                                                                   |
 
@@ -22,7 +22,7 @@ If you're forking this template to build a new action, follow this doc verbatim.
 
 ---
 
-## The 26-item standards checklist
+## The 29-item standards checklist
 
 Every active W3 partner action must satisfy **all** of these. If you're tempted to skip one, read the "why" first — most of these were paid for in real bugs.
 
@@ -227,6 +227,50 @@ Updated after each verified test run. Stale results (>30 days) are a warning, no
 
 - **Why**: The E2E workflow proves the action *can* work, but RESULTS.md proves it *does* work and documents what's needed to reproduce. Without it, a new developer can't set up E2E testing.
 - **Verify**: `ls test/workflows/RESULTS.md`
+
+### L. Polish (post-launch usability)
+
+These three checks are what separates "code merged" from "ready for a live customer demo." They surfaced from the SxT and Circle button-up passes (April 2026): the gap between a passing test suite and an action a stranger can actually adopt is mostly documentation and repo hygiene that nobody thinks to write down.
+
+**L27. README has an `## Authentication` (or `## Auth`) section.**
+
+The Quick Start should show one path; the Authentication section should enumerate **every** auth mode the action supports, not just the simplest one. SxT shipped for weeks with a Quick Start that showed only api-key mode — anyone following it would hit a brick wall on DDL because login mode wasn't even mentioned.
+
+- **Why**: Half-documented auth is worse than undocumented auth. Quick Start gets users to "hello world"; the Authentication section gets them to "production." Skipping it means the next person rediscovers the gap.
+- **Verify**: `grep -E "^## (Authentication|Auth)" README.md`
+
+**L28. `TODO.md` exists at the repo root.**
+
+A short, version-grouped checklist of known gaps and follow-ups. Not a roadmap — a candid list of "things we know we haven't done yet" so the next contributor isn't surprised. Established pattern: see `w3-chainlink-action/TODO.md` and `w3-paypal-action/TODO.md`.
+
+- **Why**: Skips and gaps that live only in PR descriptions evaporate. Skips and gaps in TODO.md are durable. The audit catches the file's existence; humans read the contents to decide priority.
+- **Verify**: `test -f TODO.md`
+
+**L29. RESULTS.md has a `## Prerequisites` section.**
+
+The list of credentials, env vars, faucet links, one-time setup steps, and any signup URLs needed to reproduce the E2E. Without it, "I ran the E2E and it passed" is unverifiable by anyone else.
+
+- **Why**: We've twice now lost a Circle entity secret (or a bridge signer key) because the recovery instructions weren't written down at registration time. RESULTS.md's Prerequisites is the place for those instructions to live.
+- **Verify**: `grep -E "^## Prerequisites" test/workflows/RESULTS.md`
+
+#### Soft polish patterns (not auto-checked, but expected)
+
+These are real patterns from the SxT and Circle work that are too squishy to mechanize cleanly. Apply them where applicable; the audit doesn't enforce them but PR review should.
+
+- **"Secret names are illustrative" caveat.** Both README and RESULTS.md should state explicitly that the `SECRET_FOO` names shown in examples are the names *this repo* uses; consumers can name their secrets however they like. The fixed contract is the action-input names (`api-key`, `user-id`, etc.), not the secret names. Without this, users see `${{ secrets.SXT_API_KEY }}` in the README and assume the action requires that exact secret name.
+
+- **Quick Start covers all major use cases.** If the action has a read path and a write path, show both. If it has multiple auth modes, show each in a labeled subsection. Quick Start that only demonstrates one path will leave users assuming the others don't exist.
+
+- **Helper scripts in `scripts/` for one-time provisioning.** When an action requires irreversible setup (registering an entity secret, generating + uploading a biscuit, deploying a stable test wallet), wrap it in a script under `scripts/` that's idempotent and discoverable via `npm run`. Examples: `w3-sxt-action/scripts/generate-biscuit.mjs`, the planned `w3-circle-action/scripts/register-entity-secret.mjs`. The action command exists in `src/`; the script exists for the repeatable setup *story*.
+
+- **Two-tier test workflows.** Actions with both Platform-API features and on-chain features (Circle Platform + CCTP, SxT REST + on-chain queries) should split their E2E into two workflow files:
+
+  - `test/workflows/e2e.yaml` — the canonical Platform-API E2E (always required by K25).
+  - `test/workflows/<feature>.yaml` — separate file per integration story (e.g., `cctp-roundtrip.yaml`).
+
+  Each gets its own row in RESULTS.md. Mixing them in one workflow makes failure attribution painful and forces all-or-nothing reruns.
+
+- **Gated integration CI.** If `.github/workflows/test.yml` (or any workflow that uses `${{ secrets.* }}` for live-cred testing) exists in the repo, gate each job on a repo variable (`if: ${{ vars.X_ENABLED == 'true' }}`) so the job skips cleanly when secrets aren't configured. This keeps the PR check green for forks and freshly-cloned repos. Triggers should be `workflow_dispatch` + `schedule` (weekly cron) + `push: tags: ['v*']` — not `push: branches: <username>/*` which both ties CI to a specific person and creates noise on every commit.
 
 ---
 

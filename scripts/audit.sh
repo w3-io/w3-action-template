@@ -1,7 +1,7 @@
 #!/bin/bash
 # audit.sh — w3 partner action consistency audit
 #
-# Checks every w3-*-action repo in the parent workspace against the 26-item
+# Checks every w3-*-action repo in the parent workspace against the 29-item
 # standards checklist in ../AGENTS.md. Reads from origin/<default-branch>
 # rather than local working trees so the audit reflects what's actually
 # shipped, not what's in someone's uncommitted changes.
@@ -111,7 +111,7 @@ audit_repo() {
   fi
 
   # Read files once
-  local pkg ci action ignore eslint gitignore srcindex
+  local pkg ci action ignore eslint gitignore srcindex readme results
   pkg=$(show_origin "$dir" "package.json")
   ci=$(show_origin "$dir" ".github/workflows/ci.yml")
   action=$(show_origin "$dir" "action.yml")
@@ -119,10 +119,12 @@ audit_repo() {
   eslint=$(show_origin "$dir" "eslint.config.js")
   gitignore=$(show_origin "$dir" ".gitignore")
   srcindex=$(show_origin "$dir" "src/index.js")
+  readme=$(show_origin "$dir" "README.md")
+  results=$(show_origin "$dir" "test/workflows/RESULTS.md")
 
   # Compute pass/fail for each check.
   # 1=pass, 0=fail
-  local A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24 K25 K26
+  local A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24 K25 K26 L27 L28 L29
   A1=0; [ -n "$ci" ] && A1=1
   A2=0; echo "$ci" | grep -qE "node-version: ['\"]?24['\"]?" && A2=1
   A3=0; echo "$ci" | grep -q "packages: read" && A3=1
@@ -237,17 +239,29 @@ audit_repo() {
   K25=0
   if [ -n "$default_ref" ]; then
     local e2e_files
+    # `grep -E` for portable extended regex (BSD grep on macOS doesn't
+    # honor `\|` alternation in BRE, breaking the test on dev machines).
     e2e_files=$(git -C "$dir" ls-tree --name-only "origin/$default_ref" -- test/workflows/ 2>/dev/null \
-      | grep '\.yaml$\|\.yml$' || true)
+      | grep -E '\.(yaml|yml)$' || true)
     [ -n "$e2e_files" ] && K25=1
   fi
 
   # K26: E2E results documented in test/workflows/RESULTS.md.
   K26=0; in_tree "$dir" "test/workflows/RESULTS.md" && K26=1
 
+  # L27: README has an Authentication / Auth section.
+  # Accepts "## Authentication", "## Auth", or "## Auth modes".
+  L27=0; echo "$readme" | grep -qE "^## (Authentication|Auth|Auth modes)" && L27=1
+
+  # L28: TODO.md exists at repo root.
+  L28=0; in_tree "$dir" "TODO.md" && L28=1
+
+  # L29: RESULTS.md has a Prerequisites section.
+  L29=0; echo "$results" | grep -qE "^## Prerequisites" && L29=1
+
   # Format the row.
   printf "| %-25s |" "$repo"
-  for v in A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24 K25 K26; do
+  for v in A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24 K25 K26 L27 L28 L29; do
     eval "val=\$$v"
     if [ "$val" = "1" ]; then printf " ✅ |"; else printf " ❌ |"; FAILED=1; fi
   done
@@ -261,10 +275,10 @@ audit_repo() {
 cat <<'EOF'
 # W3 Action Consistency Audit
 
-Standards checked: 26 (see AGENTS.md). Reading from `origin/<default-branch>`.
+Standards checked: 29 (see AGENTS.md). Reading from `origin/<default-branch>`.
 
-| Repo                      | A1 | A2 | A3 | A4 | A5 | A6 | A7 | B8 | C9 | C10 | C11 | D12 | D13 | E14 | E15 | F16 | G17 | H18 | H19 | I20 | J21 | K22 | K23 | K24 | K25 | K26 |
-|---------------------------|----|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| Repo                      | A1 | A2 | A3 | A4 | A5 | A6 | A7 | B8 | C9 | C10 | C11 | D12 | D13 | E14 | E15 | F16 | G17 | H18 | H19 | I20 | J21 | K22 | K23 | K24 | K25 | K26 | L27 | L28 | L29 |
+|---------------------------|----|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 EOF
 
 # ---------------------------------------------------------------------------
@@ -296,6 +310,7 @@ cat <<EOF
 - I20: standard package.json scripts (format, format:check, lint, test, build, all)
 - J21: .npmrc tracked with @w3-io scope mapping
 - K22-K26: Consistency (dist staleness guard in CI, action.yml inputs match source, required flags correct, E2E test workflow, E2E results documented)
+- L27-L29: Polish (README has Auth section, TODO.md exists, RESULTS.md has Prerequisites)
 
 See ../AGENTS.md for the full per-check explanations and fix recipes.
 EOF
