@@ -12,7 +12,7 @@
 # This workflow is NOT run by CI. It's a manual validation tool
 # for proving the action works end-to-end through the W3 protocol.
 
-name: e2e-test-yourpartner  # TODO: change to your action name
+name: e2e-test-yourpartner # TODO: change to your action name
 on: workflow_dispatch
 
 jobs:
