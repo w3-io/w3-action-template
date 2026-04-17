@@ -201,6 +201,7 @@ test/workflows/e2e.yaml
 ```
 
 A real W3 workflow YAML that exercises the action's commands against real APIs or contracts. Must:
+
 - Exist as a file in `test/workflows/`
 - Be a valid W3 workflow (name, on: workflow_dispatch, jobs)
 - Document prerequisites (required env vars) in comments
@@ -216,6 +217,7 @@ test/workflows/RESULTS.md
 ```
 
 Documents verified E2E test results with:
+
 - Last verified date
 - Environment and test method
 - Prerequisites table (credentials, env vars, signup URLs)
@@ -225,7 +227,7 @@ Documents verified E2E test results with:
 
 Updated after each verified test run. Stale results (>30 days) are a warning, not a failure.
 
-- **Why**: The E2E workflow proves the action *can* work, but RESULTS.md proves it *does* work and documents what's needed to reproduce. Without it, a new developer can't set up E2E testing.
+- **Why**: The E2E workflow proves the action _can_ work, but RESULTS.md proves it _does_ work and documents what's needed to reproduce. Without it, a new developer can't set up E2E testing.
 - **Verify**: `ls test/workflows/RESULTS.md`
 
 ### L. Polish (post-launch usability)
@@ -257,14 +259,13 @@ The list of credentials, env vars, faucet links, one-time setup steps, and any s
 
 These are real patterns from the SxT and Circle work that are too squishy to mechanize cleanly. Apply them where applicable; the audit doesn't enforce them but PR review should.
 
-- **"Secret names are illustrative" caveat.** Both README and RESULTS.md should state explicitly that the `SECRET_FOO` names shown in examples are the names *this repo* uses; consumers can name their secrets however they like. The fixed contract is the action-input names (`api-key`, `user-id`, etc.), not the secret names. Without this, users see `${{ secrets.SXT_API_KEY }}` in the README and assume the action requires that exact secret name.
+- **"Secret names are illustrative" caveat.** Both README and RESULTS.md should state explicitly that the `SECRET_FOO` names shown in examples are the names _this repo_ uses; consumers can name their secrets however they like. The fixed contract is the action-input names (`api-key`, `user-id`, etc.), not the secret names. Without this, users see `${{ secrets.SXT_API_KEY }}` in the README and assume the action requires that exact secret name.
 
 - **Quick Start covers all major use cases.** If the action has a read path and a write path, show both. If it has multiple auth modes, show each in a labeled subsection. Quick Start that only demonstrates one path will leave users assuming the others don't exist.
 
-- **Helper scripts in `scripts/` for one-time provisioning.** When an action requires irreversible setup (registering an entity secret, generating + uploading a biscuit, deploying a stable test wallet), wrap it in a script under `scripts/` that's idempotent and discoverable via `npm run`. Examples: `w3-sxt-action/scripts/generate-biscuit.mjs`, the planned `w3-circle-action/scripts/register-entity-secret.mjs`. The action command exists in `src/`; the script exists for the repeatable setup *story*.
+- **Helper scripts in `scripts/` for one-time provisioning.** When an action requires irreversible setup (registering an entity secret, generating + uploading a biscuit, deploying a stable test wallet), wrap it in a script under `scripts/` that's idempotent and discoverable via `npm run`. Examples: `w3-sxt-action/scripts/generate-biscuit.mjs`, the planned `w3-circle-action/scripts/register-entity-secret.mjs`. The action command exists in `src/`; the script exists for the repeatable setup _story_.
 
 - **Two-tier test workflows.** Actions with both Platform-API features and on-chain features (Circle Platform + CCTP, SxT REST + on-chain queries) should split their E2E into two workflow files:
-
   - `test/workflows/e2e.yaml` — the canonical Platform-API E2E (always required by K25).
   - `test/workflows/<feature>.yaml` — separate file per integration story (e.g., `cctp-roundtrip.yaml`).
 
