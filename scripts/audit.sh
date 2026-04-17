@@ -296,6 +296,7 @@ audit_repo() {
   # M32: No stub commands (description is not just the restated name).
   # A stub is a command where the description is fewer than 15 characters
   # (e.g., "Getset.", "Get quote.", "Exists.").
+  # Handles both inline descriptions and block scalars (> or |).
   M32=0
   if [ -n "$manifest" ]; then
     local stub_count
@@ -303,7 +304,13 @@ audit_repo() {
       /^  - name:/ { cmd=1; next }
       cmd && /description:/ {
         desc=$0; sub(/.*description: */, "", desc);
-        gsub(/[">]/, "", desc);
+        gsub(/[">|]/, "", desc);
+        gsub(/^ +/, "", desc);
+        # If inline desc is empty, grab the next line (block scalar)
+        if (length(desc) < 3) {
+          getline; desc=$0;
+          gsub(/^ +/, "", desc);
+        }
         if (length(desc) < 15) stubs++;
         cmd=0
       }
