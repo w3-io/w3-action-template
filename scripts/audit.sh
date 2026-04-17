@@ -1,7 +1,7 @@
 #!/bin/bash
 # audit.sh — w3 partner action consistency audit
 #
-# Checks every w3-*-action repo in the parent workspace against the 29-item
+# Checks every w3-*-action repo in the parent workspace against the 36-item
 # standards checklist in ../AGENTS.md. Reads from origin/<default-branch>
 # rather than local working trees so the audit reflects what's actually
 # shipped, not what's in someone's uncommitted changes.
@@ -267,9 +267,100 @@ audit_repo() {
   # L29: RESULTS.md has a Prerequisites section.
   L29=0; echo "$results" | grep -qE "^## Prerequisites" && L29=1
 
+  # ── M: MCP manifest content (w3-action.yaml) ──────────────────────────
+  local manifest
+  manifest=$(show_origin "$dir" "w3-action.yaml")
+
+  # M30: Every command has inputs with type + description.
+  # Fail if any command block exists that has no inputs defined, OR if any
+  # input is missing type or description. Simplified: check that every
+  # `- name:` under `commands:` is followed (within its block) by `inputs:`.
+  M30=0
+  if [ -n "$manifest" ]; then
+    local cmd_count input_blocks
+    cmd_count=$(echo "$manifest" | grep -cE "^  - name:" || echo 0)
+    input_blocks=$(echo "$manifest" | grep -cE "^    inputs:" || echo 0)
+    [ "$cmd_count" -gt 0 ] && [ "$cmd_count" = "$input_blocks" ] && M30=1
+  fi
+
+  # M31: Every command has a result output.
+  M31=0
+  if [ -n "$manifest" ]; then
+    local output_blocks result_outputs
+    output_blocks=$(echo "$manifest" | grep -cE "^    outputs:" || echo 0)
+    result_outputs=$(echo "$manifest" | grep -cE "^      result:" || echo 0)
+    [ "$cmd_count" -gt 0 ] && [ "$output_blocks" = "$result_outputs" ] && \
+      [ "$cmd_count" = "$output_blocks" ] && M31=1
+  fi
+
+  # M32: No stub commands (description is not just the restated name).
+  # A stub is a command where the description is fewer than 15 characters
+  # (e.g., "Getset.", "Get quote.", "Exists.").
+  M32=0
+  if [ -n "$manifest" ]; then
+    local stub_count
+    stub_count=$(echo "$manifest" | awk '
+      /^  - name:/ { cmd=1; next }
+      cmd && /description:/ {
+        desc=$0; sub(/.*description: */, "", desc);
+        gsub(/[">]/, "", desc);
+        if (length(desc) < 15) stubs++;
+        cmd=0
+      }
+      END { print stubs+0 }
+    ')
+    [ "$stub_count" = "0" ] && M32=1
+  fi
+
+  # M33: partner field present and lowercase.
+  M33=0
+  if [ -n "$manifest" ]; then
+    local partner_val
+    partner_val=$(echo "$manifest" | grep -E "^partner:" | head -1 | sed 's/partner: *//' | tr -d '"' | tr -d "'")
+    [ -n "$partner_val" ] && echo "$partner_val" | grep -qE "^[a-z0-9-]+$" && M33=1
+  fi
+
+  # M34: name field is short (< 5 words).
+  M34=0
+  if [ -n "$manifest" ]; then
+    local name_val name_words
+    name_val=$(echo "$manifest" | grep -E "^name:" | head -1 | sed 's/name: *//' | tr -d '"' | tr -d "'")
+    name_words=$(echo "$name_val" | wc -w | tr -d ' ')
+    [ -n "$name_val" ] && [ "$name_words" -le 4 ] && M34=1
+  fi
+
+  # M35: description field exists and > 20 chars.
+  M35=0
+  if [ -n "$manifest" ]; then
+    local desc_val
+    # Handle both inline and block scalar (>) descriptions.
+    desc_val=$(echo "$manifest" | awk '
+      /^description:/ {
+        sub(/^description: */, ""); sub(/^>$/, "");
+        if (length($0) > 2) { print $0; exit }
+        getline; print; exit
+      }
+    ')
+    [ ${#desc_val} -gt 20 ] && M35=1
+  fi
+
+  # M36: context field exists and > 50 chars.
+  M36=0
+  if [ -n "$manifest" ]; then
+    local ctx_val
+    ctx_val=$(echo "$manifest" | awk '
+      /^context:/ {
+        sub(/^context: */, ""); sub(/^>$/, "");
+        if (length($0) > 2) { print $0; exit }
+        getline; print; exit
+      }
+    ')
+    [ ${#ctx_val} -gt 50 ] && M36=1
+  fi
+
   # Format the row.
   printf "| %-25s |" "$repo"
-  for v in A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24 K25 K26 L27 L28 L29; do
+  for v in A1 A2 A3 A4 A5 A6 A7 B8 C9 C10 C11 D12 D13 E14 E15 F16 G17 H18 H19 I20 J21 K22 K23 K24 K25 K26 L27 L28 L29 M30 M31 M32 M33 M34 M35 M36; do
     eval "val=\$$v"
     if [ "$val" = "1" ]; then printf " ✅ |"; else printf " ❌ |"; FAILED=1; fi
   done
@@ -283,10 +374,10 @@ audit_repo() {
 cat <<'EOF'
 # W3 Action Consistency Audit
 
-Standards checked: 29 (see AGENTS.md). Reading from `origin/<default-branch>`.
+Standards checked: 36 (see AGENTS.md). Reading from `origin/<default-branch>`.
 
-| Repo                      | A1 | A2 | A3 | A4 | A5 | A6 | A7 | B8 | C9 | C10 | C11 | D12 | D13 | E14 | E15 | F16 | G17 | H18 | H19 | I20 | J21 | K22 | K23 | K24 | K25 | K26 | L27 | L28 | L29 |
-|---------------------------|----|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+| Repo                      | A1 | A2 | A3 | A4 | A5 | A6 | A7 | B8 | C9 | C10 | C11 | D12 | D13 | E14 | E15 | F16 | G17 | H18 | H19 | I20 | J21 | K22 | K23 | K24 | K25 | K26 | L27 | L28 | L29 | M30 | M31 | M32 | M33 | M34 | M35 | M36 |
+|---------------------------|----|----|----|----|----|----|----|----|----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 EOF
 
 # ---------------------------------------------------------------------------
@@ -319,6 +410,7 @@ cat <<EOF
 - J21: .npmrc tracked with @w3-io scope mapping
 - K22-K26: Consistency (dist staleness guard in CI, action.yml inputs match source, required flags correct, E2E test workflow, E2E results documented)
 - L27-L29: Polish (README has Auth section, TODO.md exists, RESULTS.md has Prerequisites)
+- M30-M36: MCP manifest content (typed inputs, result output, no stubs, partner lowercase, short name, description, context)
 
 See ../AGENTS.md for the full per-check explanations and fix recipes.
 EOF

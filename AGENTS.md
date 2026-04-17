@@ -8,7 +8,7 @@ If you're forking this template to build a new action, follow this doc verbatim.
 
 | Reader                 | What you need from this doc                                                                                                             |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **AI agents**          | The 29-item checklist with grep/inspect commands and per-item fix recipes. Skip the prose.                                              |
+| **AI agents**          | The 36-item checklist with grep/inspect commands and per-item fix recipes. Skip the prose.                                              |
 | **Human contributors** | The "why" sections — they encode the lessons we learned the hard way. The full set of standards is short enough to read in one sitting. |
 | **Both**               | The file structure pattern and the canonical `src/` + `test/` shapes.                                                                   |
 
@@ -22,7 +22,7 @@ If you're forking this template to build a new action, follow this doc verbatim.
 
 ---
 
-## The 29-item standards checklist
+## The 36-item standards checklist
 
 Every active W3 partner action must satisfy **all** of these. If you're tempted to skip one, read the "why" first — most of these were paid for in real bugs.
 
@@ -272,6 +272,116 @@ These are real patterns from the SxT and Circle work that are too squishy to mec
   Each gets its own row in RESULTS.md. Mixing them in one workflow makes failure attribution painful and forces all-or-nothing reruns.
 
 - **Gated integration CI.** If `.github/workflows/test.yml` (or any workflow that uses `${{ secrets.* }}` for live-cred testing) exists in the repo, gate each job on a repo variable (`if: ${{ vars.X_ENABLED == 'true' }}`) so the job skips cleanly when secrets aren't configured. This keeps the PR check green for forks and freshly-cloned repos. Triggers should be `workflow_dispatch` + `schedule` (weekly cron) + `push: tags: ['v*']` — not `push: branches: <username>/*` which both ties CI to a specific person and creates noise on every commit.
+
+### M. MCP manifest content (`w3-action.yaml`)
+
+The MCP manifest is the primary interface between the action and AI agents. It determines whether an agent can discover, understand, and correctly invoke the action. A structurally valid but content-empty manifest is invisible to users — the manifest must answer **why** to use this partner, not just **what** commands exist.
+
+**M30. Every command has fully typed inputs.**
+
+Every input on every command must have `type`, `required`, and `description`. No stubs — if a command isn't ready to document, don't list it. A stub command (`getset: "Getset."`) is worse than no command: it occupies registry space and gives AI agents a broken tool.
+
+- **Type policy**: All input types are `type: string`. The action code handles parsing with `Number()`, `JSON.parse()`, etc. This matches GitHub Actions behavior (all inputs are strings) and avoids ambiguity about who does numeric coercion.
+- **Verify**: Every `name:` under `commands:` must have `inputs:` with per-field `type:`, `required:`, and `description:`.
+
+**M31. Every command has a `result` output.**
+
+Single output named `result` with `type` and `description`. This is the contract consumers rely on: `${{ fromJSON(steps.foo.outputs.result).field }}`. Multiple named outputs (like `is-sanctioned` + `identifications`) break the standard pattern.
+
+- **Verify**: Every command's `outputs:` block contains `result:` with `type:` and `description:`.
+
+**M32. No stub commands.**
+
+A command's description must not be a restated version of its name. `getset: "Getset."` and `check-limit: "Check limit."` are stubs. Minimum: one sentence explaining what the command does AND when or why you'd use it.
+
+Good: `"Get a locked-rate quote for a fiat-to-crypto conversion. Returns exchange rate, fees, and amounts. Rate locked for 20 minutes. Always call this before create-autoramp."`
+
+Bad: `"Get quote."`
+
+- **Why**: AI agents use the description to decide whether a command fits the user's intent. A restated name provides zero signal.
+- **Verify**: No command where `description` matches a mechanical expansion of `name` (e.g., `get-foo` → `"Get foo."`)
+
+**M33. `partner` field present and lowercase.**
+
+Always present. Always a lowercase slug matching the repo pattern `w3-<partner>-action`.
+
+Good: `partner: stripe`, `partner: paypal`, `partner: venice`
+Bad: `partner: PayPal`, `partner: Iron`, missing entirely
+
+- **Verify**: `grep "^partner:" w3-action.yaml` returns a lowercase value.
+
+**M34. `name` field is a short proper name.**
+
+1-4 words. The partner's display name for humans, not a description of what it does.
+
+Good: `name: Stripe`, `name: Venice AI`, `name: Space and Time`
+Bad: `name: "Redis key-value store, caching, counters, lists, hashes, sets, and distributed locks"`
+
+If you need more than 4 words, the extra text belongs in `description`.
+
+- **Verify**: `name:` field has fewer than 5 space-separated words.
+
+**M35. Top-level `description` exists and is substantive (> 20 chars).**
+
+One paragraph answering: *What does this partner do? What makes it different from alternatives?*
+
+Mention: compliance posture, supported chains/currencies/networks, key differentiators, the trust model. This is the first thing an AI agent reads when evaluating whether to present this action to a user.
+
+Good:
+```yaml
+description: >
+  Payment processing for 135+ currencies. Card payments, ACH, SEPA, wire,
+  and 40+ local payment methods. PCI-compliant — card numbers never touch
+  your workflow. Test mode with deterministic test cards.
+```
+
+Bad: `description: Stripe payments` (too terse to differentiate)
+
+- **Verify**: `description:` field exists and has > 20 characters.
+
+**M36. Top-level `context` exists and guides agent routing (> 50 chars).**
+
+The most important field for agent usability. Must answer "when should an AI agent reach for this action?" Include:
+
+- **When to use**: "Use X when the workflow needs..."
+- **When NOT to use** (invaluable for routing): "For crypto-to-crypto, use the bridge directly."
+- **Cost model**: per-request, per-token, subscription, free tier
+- **Safety notes**: which commands are irreversible, what requires human approval
+- **Prerequisites**: API keys, KYB, account setup
+- **Workflow patterns**: typical command sequences ("get-quote → create-autoramp → list-transactions")
+
+Good:
+```yaml
+context: >
+  Use Stripe when the workflow needs to collect payment from end users via
+  cards, bank transfers, or local payment methods. For B2B payouts, consider
+  PayPal. For crypto settlements, use the bridge directly.
+
+  Pay-per-transaction (2.9% + $0.30 per card charge). No per-API-call cost.
+  Write operations (create-payment, create-refund) are irreversible after
+  settlement. All operations are idempotent with an idempotency key.
+
+  Requires a Stripe API key. Test keys start with sk_test_.
+  Typical: create-payment → confirm → get-payment (check status).
+```
+
+Bad: missing entirely, or `context: "Use for payments."` (tells the agent nothing actionable)
+
+- **Verify**: `context:` field exists and has > 50 characters.
+
+#### Command description content guidance
+
+Beyond M32's minimum bar, good command descriptions cover:
+
+| Aspect | Example |
+| --- | --- |
+| What it returns | "Returns exchange rate, fees, and settlement amounts." |
+| Prerequisites | "Always call get-quote first to lock a rate." |
+| Sequencing | "Use after create-order and before capture-order." |
+| Cost/fees | "Aave charges 0.09% flash loan premium." |
+| Safety | "Irreversible after settlement window closes." |
+| Units/format | "Amount in smallest currency unit (cents for USD)." |
+| Idempotency | "Idempotent if you pass an idempotency key." |
 
 ---
 
