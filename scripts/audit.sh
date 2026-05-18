@@ -323,7 +323,7 @@ audit_repo() {
   M33=0
   if [ -n "$manifest" ]; then
     local partner_val
-    partner_val=$(echo "$manifest" | grep -E "^partner:" | head -1 | sed 's/partner: *//' | tr -d '"' | tr -d "'")
+    partner_val=$(echo "$manifest" | { grep -E "^partner:" || true; } | head -1 | sed 's/partner: *//' | tr -d '"' | tr -d "'")
     [ -n "$partner_val" ] && echo "$partner_val" | grep -qE "^[a-z0-9-]+$" && M33=1
   fi
 
@@ -331,7 +331,7 @@ audit_repo() {
   M34=0
   if [ -n "$manifest" ]; then
     local name_val name_words
-    name_val=$(echo "$manifest" | grep -E "^name:" | head -1 | sed 's/name: *//' | tr -d '"' | tr -d "'")
+    name_val=$(echo "$manifest" | { grep -E "^name:" || true; } | head -1 | sed 's/name: *//' | tr -d '"' | tr -d "'")
     name_words=$(echo "$name_val" | wc -w | tr -d ' ')
     [ -n "$name_val" ] && [ "$name_words" -le 4 ] && M34=1
   fi
