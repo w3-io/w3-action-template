@@ -42,3 +42,43 @@ commands:
       result:
         type: object
         description: TODO - describe the output shape
+
+# ── Display metadata (optional but recommended) ──────────────────────
+#
+# OPTIONAL: Adding a `display:` block makes your action render with
+# branded cards in the W3 Explorer, AI chat, and other W3 UIs. Without
+# it, your action's steps render via the renderer's generic widget for
+# their syscall kind (still works, just unbranded).
+#
+# Canonical schema: docs/display-schema.md
+# JSON Schema:      schemas/display.schema.json
+#
+# Templating syntax: {{ path.to.value | filter | filter2 }}
+# Context: { inputs: <your action input map>, outputs: <your output map>, step: <step meta> }
+#
+# Available filters (defined by the renderer, not by you):
+#   truncate_addr, chain_pretty, default:"x", length, format_rate,
+#   format_usdc_base, format_usdc_whole,
+#   decode_calldata_action, decode_calldata_amount_usdc, decode_calldata_spender,
+#   known_contract_name, known_contract_short, known_contract_brand
+#
+# display:
+#   brand:
+#     name: "Your Partner Name"
+#     short_name: "Partner"
+#     description: "One-line tagline"
+#     logo: "https://raw.githubusercontent.com/w3-io/w3-yourpartner-action/main/assets/logo.svg"
+#     color: "#3B82F6"
+#
+#   commands:
+#     example-command:
+#       icon: "info"                # named icon — renderer picks from: lock|vault|check|send|redeem|info|chart
+#       title_template: "Action: {{ inputs.input }}"
+#       subtitle_template: "subtitle goes here"
+#       summary:
+#         - { label: "Input",  value: "{{ inputs.input }}" }
+#         - { label: "Result", value: "{{ outputs.result.field | default: '—' }}" }
+#       tx_hash_path: "outputs.result.txHash"     # optional; for on-chain ops
+#       chain_explorer:                            # optional; auto-wired by tx_hash_path
+#         ethereum: "https://etherscan.io/tx/{{tx_hash}}"
+#         base:     "https://basescan.org/tx/{{tx_hash}}"
