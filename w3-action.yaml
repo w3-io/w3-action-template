@@ -10,6 +10,18 @@ name: YourPartner Integration # TODO: human-readable name
 version: 1.0.0
 repo: w3-io/w3-yourpartner-action # TODO: your repo
 
+description: > # TODO: replace with a short description of what this action does.
+  TODO — Short summary of what your action does, who its end users
+  are, and what the core capabilities are. AI agents read this when
+  recommending the action.
+
+context: > # TODO: replace with a longer note about when to use this action.
+  TODO — Longer note for AI agents about when to choose this action
+  over alternatives. Cover: the kinds of workflows this action belongs
+  in, what makes it the right choice vs. similar partner actions, any
+  hard requirements (secrets, KYC, allowlists), and any common pitfalls
+  authors hit when wiring it up. ~3–5 sentences.
+
 commands:
   # TODO: Define each command your action supports. Example:
   #
