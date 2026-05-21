@@ -47,9 +47,10 @@ are templated. Syntax:
 ```
 
 Rules:
+
 - **Variables**: dot-path resolved against a context object. Context
   shape: `{ inputs: <action input map>, outputs: <action output map>,
-  step: <workflow step meta> }`.
+step: <workflow step meta> }`.
 - **Filters**: piped left to right. Each filter is a pure function
   registered by the renderer.
 - **Default**: `| default: "x"` — fallback when the upstream value is
@@ -67,20 +68,20 @@ but never define their own.
 
 ### Generic
 
-| Filter | Input → Output | Example |
-|---|---|---|
-| `truncate_addr` | hex address → `0xabcd…1234` | `0xd8dA…6045` |
-| `chain_pretty` | chain id string → human label | `evm_avalanche_chain` → `Avalanche C-Chain` |
-| `default: "x"` | undefined/empty → `"x"`; otherwise passthrough | |
-| `length` | array → integer count | |
-| `format_rate` | scaled-int (1e18 base) → decimal string | `1039232297669032845` → `1.0392` |
+| Filter          | Input → Output                                 | Example                                     |
+| --------------- | ---------------------------------------------- | ------------------------------------------- |
+| `truncate_addr` | hex address → `0xabcd…1234`                    | `0xd8dA…6045`                               |
+| `chain_pretty`  | chain id string → human label                  | `evm_avalanche_chain` → `Avalanche C-Chain` |
+| `default: "x"`  | undefined/empty → `"x"`; otherwise passthrough |                                             |
+| `length`        | array → integer count                          |                                             |
+| `format_rate`   | scaled-int (1e18 base) → decimal string        | `1039232297669032845` → `1.0392`            |
 
 ### USDC formatting
 
-| Filter | Input → Output | Example |
-|---|---|---|
-| `format_usdc_base` | base-units (6 dec) string/int → `"$N,NNN USDC"` | `4000000000` → `$4,000 USDC` |
-| `format_usdc_whole` | base-units → `"$X.XX"` (no suffix) | `4000000000` → `$4,000.00` |
+| Filter              | Input → Output                                  | Example                      |
+| ------------------- | ----------------------------------------------- | ---------------------------- |
+| `format_usdc_base`  | base-units (6 dec) string/int → `"$N,NNN USDC"` | `4000000000` → `$4,000 USDC` |
+| `format_usdc_whole` | base-units → `"$X.XX"` (no suffix)              | `4000000000` → `$4,000.00`   |
 
 ### Calldata decoders (used by ForDefi-style raw-tx widgets)
 
@@ -88,19 +89,19 @@ These read the `hex_data` of an EVM `create-transaction` payload and
 return a human label or amount. Authors should ensure the calldata is
 already in scope (i.e. `inputs.data.details.data.hex_data`).
 
-| Filter | Returns | Notes |
-|---|---|---|
-| `decode_calldata_action` | `"Approve"`, `"Deposit"`, `"Mint vault shares"`, `"Redeem"`, or `"Unknown"` | Dispatched by 4-byte selector |
-| `decode_calldata_amount_usdc` | amount field formatted as USDC | Works for `approve(spender, amount)`, ERC-4626 `deposit(amount, receiver)`, Yelay `mint(amount, projectId, receiver)`, etc. |
-| `decode_calldata_spender` | spender address (for approve calldata) | |
+| Filter                        | Returns                                                                     | Notes                                                                                                                       |
+| ----------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `decode_calldata_action`      | `"Approve"`, `"Deposit"`, `"Mint vault shares"`, `"Redeem"`, or `"Unknown"` | Dispatched by 4-byte selector                                                                                               |
+| `decode_calldata_amount_usdc` | amount field formatted as USDC                                              | Works for `approve(spender, amount)`, ERC-4626 `deposit(amount, receiver)`, Yelay `mint(amount, projectId, receiver)`, etc. |
+| `decode_calldata_spender`     | spender address (for approve calldata)                                      |                                                                                                                             |
 
 ### Contract registry
 
-| Filter | Returns | Notes |
-|---|---|---|
-| `known_contract_name` | full name (`"Fidelity USDC Money Market Fund"`) or address | |
-| `known_contract_short` | short label (`"Fidelity MMF"`) or `truncate_addr` fallback | |
-| `known_contract_brand` | brand-only (`"Fidelity"`) or address | |
+| Filter                 | Returns                                                    | Notes |
+| ---------------------- | ---------------------------------------------------------- | ----- |
+| `known_contract_name`  | full name (`"Fidelity USDC Money Market Fund"`) or address |       |
+| `known_contract_short` | short label (`"Fidelity MMF"`) or `truncate_addr` fallback |       |
+| `known_contract_brand` | brand-only (`"Fidelity"`) or address                       |       |
 
 The registry is provided by the renderer (e.g. the explorer ships
 `known-contracts.json`). Action authors don't define it — they consume
@@ -111,28 +112,34 @@ it via these filters.
 ```yaml
 display:
   brand:
-    name: "ForDefi"
-    short_name: "ForDefi"
-    description: "MPC custody · institutional-grade signing"
-    logo: "https://raw.githubusercontent.com/w3-io/w3-fordefi-action/main/assets/logo.svg"
-    color: "#1A1A2E"
+    name: 'ForDefi'
+    short_name: 'ForDefi'
+    description: 'MPC custody · institutional-grade signing'
+    logo: 'https://raw.githubusercontent.com/w3-io/w3-fordefi-action/main/assets/logo.svg'
+    color: '#1A1A2E'
 
   commands:
     create-transaction:
-      icon: "lock"
+      icon: 'lock'
       title_template: "{{ inputs.data.note | default: 'ForDefi-signed transaction' }}"
-      subtitle_template: "{{ inputs.data.details.chain | chain_pretty }} · to {{ inputs.data.details.to | known_contract_short }}"
+      subtitle_template: '{{ inputs.data.details.chain | chain_pretty }} · to {{ inputs.data.details.to | known_contract_short }}'
       summary:
-        - { label: "Action", value: "{{ inputs.data.details.data.hex_data | decode_calldata_action }}" }
-        - { label: "Amount", value: "{{ inputs.data.details.data.hex_data | decode_calldata_amount_usdc | default: '—' }}" }
-        - { label: "Destination", value: "{{ inputs.data.details.to | known_contract_brand }}" }
-        - { label: "Signer", value: "ForDefi MPC" }
-      tx_hash_path: "outputs.result.transaction_id"
+        - {
+            label: 'Action',
+            value: '{{ inputs.data.details.data.hex_data | decode_calldata_action }}',
+          }
+        - {
+            label: 'Amount',
+            value: "{{ inputs.data.details.data.hex_data | decode_calldata_amount_usdc | default: '—' }}",
+          }
+        - { label: 'Destination', value: '{{ inputs.data.details.to | known_contract_brand }}' }
+        - { label: 'Signer', value: 'ForDefi MPC' }
+      tx_hash_path: 'outputs.result.transaction_id'
       chain_explorer:
-        evm_ethereum_mainnet: "https://etherscan.io/tx/{{tx_hash}}"
-        evm_avalanche_chain: "https://snowtrace.io/tx/{{tx_hash}}"
-        evm_base_mainnet: "https://basescan.org/tx/{{tx_hash}}"
-        evm_ethereum_sepolia: "https://sepolia.etherscan.io/tx/{{tx_hash}}"
+        evm_ethereum_mainnet: 'https://etherscan.io/tx/{{tx_hash}}'
+        evm_avalanche_chain: 'https://snowtrace.io/tx/{{tx_hash}}'
+        evm_base_mainnet: 'https://basescan.org/tx/{{tx_hash}}'
+        evm_ethereum_sepolia: 'https://sepolia.etherscan.io/tx/{{tx_hash}}'
 ```
 
 ## What action authors get for free

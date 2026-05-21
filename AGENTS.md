@@ -323,11 +323,12 @@ If you need more than 4 words, the extra text belongs in `description`.
 
 **M35. Top-level `description` exists and is substantive (> 20 chars).**
 
-One paragraph answering: *What does this partner do? What makes it different from alternatives?*
+One paragraph answering: _What does this partner do? What makes it different from alternatives?_
 
 Mention: compliance posture, supported chains/currencies/networks, key differentiators, the trust model. This is the first thing an AI agent reads when evaluating whether to present this action to a user.
 
 Good:
+
 ```yaml
 description: >
   Payment processing for 135+ currencies. Card payments, ACH, SEPA, wire,
@@ -351,6 +352,7 @@ The most important field for agent usability. Must answer "when should an AI age
 - **Workflow patterns**: typical command sequences ("get-quote → create-autoramp → list-transactions")
 
 Good:
+
 ```yaml
 context: >
   Use Stripe when the workflow needs to collect payment from end users via
@@ -373,15 +375,15 @@ Bad: missing entirely, or `context: "Use for payments."` (tells the agent nothin
 
 Beyond M32's minimum bar, good command descriptions cover:
 
-| Aspect | Example |
-| --- | --- |
+| Aspect          | Example                                                |
+| --------------- | ------------------------------------------------------ |
 | What it returns | "Returns exchange rate, fees, and settlement amounts." |
-| Prerequisites | "Always call get-quote first to lock a rate." |
-| Sequencing | "Use after create-order and before capture-order." |
-| Cost/fees | "Aave charges 0.09% flash loan premium." |
-| Safety | "Irreversible after settlement window closes." |
-| Units/format | "Amount in smallest currency unit (cents for USD)." |
-| Idempotency | "Idempotent if you pass an idempotency key." |
+| Prerequisites   | "Always call get-quote first to lock a rate."          |
+| Sequencing      | "Use after create-order and before capture-order."     |
+| Cost/fees       | "Aave charges 0.09% flash loan premium."               |
+| Safety          | "Irreversible after settlement window closes."         |
+| Units/format    | "Amount in smallest currency unit (cents for USD)."    |
+| Idempotency     | "Idempotent if you pass an idempotency key."           |
 
 ---
 
